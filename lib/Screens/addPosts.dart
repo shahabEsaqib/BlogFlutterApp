@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:blog_app_flutter/Components/Roundbutton.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,8 +21,10 @@ class _AddPostsState extends State<AddPosts> {
   TextEditingController titleEditingController = new TextEditingController();
   TextEditingController descEditingController = new TextEditingController();
   final formkey = GlobalKey<FormState>();
+
   final postRef = FirebaseDatabase.instance.ref().child('post');
   firebase_storge.FirebaseStorage storage = firebase_storge.FirebaseStorage.instance;
+  FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 
   File? _image;
   final picker = ImagePicker();
@@ -172,13 +175,22 @@ class _AddPostsState extends State<AddPosts> {
                         showspinner = true;
                       });
                       try {
-                        int data = DateTime.now().microsecondsSinceEpoch;
-                        firebase_storge.Reference ref = firebase_storge.FirebaseStorage.instance.ref('/blogapp$data');
+                        int date = DateTime.now().microsecondsSinceEpoch;
+                        firebase_storge.Reference ref = firebase_storge.FirebaseStorage.instance.ref('/blogapp$date');
                         firebase_storge.UploadTask uploadTask = ref.putFile(_image!.absolute);
                         await Future.value(uploadTask);
                         var newUrl =await ref.getDownloadURL();
-                        postRef.child('post List').child(data.toString()).set({
-                          
+                        final User? user = firebaseAuth.currentUser;
+
+                        postRef.child('post List').child(date.toString()).set({
+                          'pid':date.toString(),
+                          'pimage':newUrl.toString(),
+                          'ptime':date.toString(),
+                          'ptitle':titleEditingController.text.toString(),
+                          'pdesc':descEditingController.text.toString(),
+                          'pemail':user!.email.toString(),
+                          'uid':user.uid.toString(),
+
                         }).then((value){
                           toastmessege('Post published');
                           setState(() {
